@@ -1,0 +1,5 @@
+IndentWidth: 4
+ColumnLimit: 150
+TabWidth: 4
+UseTab: Never
+SortIncludes: false
