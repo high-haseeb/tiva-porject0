@@ -51,6 +51,9 @@ static void IntDefaultHandler(void);
 //*****************************************************************************
 extern void __iar_program_start(void);
 
+extern void Timer0IntHandler(void);
+extern void ADC0IntHandler(void);
+
 //*****************************************************************************
 //
 // Reserve space for the system stack.
@@ -114,9 +117,9 @@ __root const uVectorEntry __vector_table[] @ ".intvec" =
     IntDefaultHandler,                      // ADC Sequence 0
     IntDefaultHandler,                      // ADC Sequence 1
     IntDefaultHandler,                      // ADC Sequence 2
-    IntDefaultHandler,                      // ADC Sequence 3
+    ADC0IntHandler,                      // ADC Sequence 3
     IntDefaultHandler,                      // Watchdog timer
-    IntDefaultHandler,                      // Timer 0 subtimer A
+    Timer0IntHandler,                      // Timer 0 subtimer A
     IntDefaultHandler,                      // Timer 0 subtimer B
     IntDefaultHandler,                      // Timer 1 subtimer A
     IntDefaultHandler,                      // Timer 1 subtimer B

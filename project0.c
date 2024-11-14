@@ -14,6 +14,10 @@
 #include "driverlib/interrupt.h"
 #include "inc/hw_ints.h"
 
+// for manual interupts
+/* #include "inc/hw_types.h" */
+/* #include "inc/hw_nvic.h" */
+
 #define LCD_I2C_ADDRESS 0x27
 #define LCD_CMD 0
 #define LCD_DATA 1
@@ -42,6 +46,20 @@ void ADC_Init(void) {
     ADCSequenceStepConfigure(ADC0_BASE, 3, 0, ADC_CTL_CH0 | ADC_CTL_IE | ADC_CTL_END);
     ADCSequenceEnable(ADC0_BASE, 3);
     ADCIntClear(ADC0_BASE, 3);
+    IntEnable(INT_ADC0SS3);
+    ADCIntEnable(ADC0_BASE, 3);
+}
+
+void ADC0IntHandler(void) {
+    uint32_t adcValue;
+    ADCSequenceDataGet(ADC0_BASE, 3, &adcValue);
+    ADCIntClear(ADC0_BASE, 3);
+
+    currentTime = TimerValueGet(TIMER0_BASE, TIMER_A);
+    if (lastTime != 0) {
+        pulseInterval = currentTime - lastTime;
+    }
+    lastTime = currentTime;
 }
 
 void InitUART(void) {
@@ -136,34 +154,25 @@ unsigned long ConvertADCToRPM(void) {
     rpm = (pulseRate / PULSES_PER_REV) * 60;
     return rpm;
 }
+
 void Timer0_Init(void) {
     SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER0);
     TimerConfigure(TIMER0_BASE, TIMER_CFG_PERIODIC);
-    TimerLoadSet(TIMER0_BASE, TIMER_A, SysCtlClockGet()); // Timer interrupt every second
+    TimerLoadSet(TIMER0_BASE, TIMER_A, SysCtlClockGet());
     TimerIntEnable(TIMER0_BASE, TIMER_TIMA_TIMEOUT);
     IntEnable(INT_TIMER0A);
     TimerEnable(TIMER0_BASE, TIMER_A);
 }
 
-void Timer0_Handler(void) {
+void Timer0IntHandler(void) {
     TimerIntClear(TIMER0_BASE, TIMER_TIMA_TIMEOUT);
-    UARTprintf("RPM: %d\n", rpm);
-}
 
-void GPIOPortE_Handler(void) {
-    GPIOIntClear(GPIO_PORTE_BASE, GPIO_PIN_3);
+    if (pulseInterval > 0) {
+        // Calculate pulses per second (pulseRate = 1 / pulseInterval in seconds)
+        unsigned long pulseRate = SysCtlClockGet() / pulseInterval; // pulses per second
+        rpm = (pulseRate / PULSES_PER_REV) * 60;                    // Convert to RPM
+    }
 
-    /* currentTime = SysCtlClockGet();         // Get the current system time in microseconds */
-    /* pulseInterval = currentTime - lastTime; // Calculate the time between pulses */
-    /* lastTime = currentTime;                 // Store current time for next pulse */
-    /**/
-    /* // Calculate RPM from pulse interval */
-    /* if (pulseInterval != 0) { */
-    /*     uint32_t frequency = 1000000 / pulseInterval; */
-    /*     rpm = (frequency / PULSES_PER_REV) * 60; */
-    /* } else { */
-    /*     rpm = 0; // Set RPM to 0 if no pulse */
-    /* } */
     UARTprintf("RPM: %d\n", rpm);
 }
 
@@ -185,40 +194,24 @@ int main(void) {
     LCD_Init();
     UARTprintf("[INFO] LCD initializated \n");
 
-    /* ADC_Init(); */
-    /* UARTprintf("[INFO] ADC initializated \n"); */
-
     LCD_Clear();
     LCD_SetCursor(0, 0);
     LCD_Print("Maham Love");
     LCD_SetCursor(1, 0);
     LCD_Print("Haseeb");
 
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOE);
-    while (!SysCtlPeripheralReady(SYSCTL_PERIPH_GPIOE))
-        ;
-
-    GPIOPinTypeGPIOInput(GPIO_PORTE_BASE, GPIO_PIN_3); // Configure PE3 as input pin
-    GPIOIntTypeSet(GPIO_PORTE_BASE, GPIO_PIN_3, GPIO_FALLING_EDGE); // Falling edge interrupt
-
-    GPIOIntEnable(GPIO_PORTE_BASE, GPIO_PIN_3);                     //
-    IntPrioritySet(INT_GPIOE, 0);
-    IntRegister(INT_GPIOE, GPIOPortE_Handler);
-    IntEnable(INT_GPIOE);
+    /* HWREG(NVIC_SW_TRIG) = INT_GPIOE - 16; */
     IntMasterEnable();
+    Timer0_Init();
 
-    /* Timer0_Init(); */
-    while (1)
-        ;
+    ADC_Init();
+    UARTprintf("[INFO] ADC initializated \n");
 
     /* uint32_t adcValue; */
-    /**/
-    /* while (1) { */
-    /*     ADCProcessorTrigger(ADC0_BASE, 3); */
-    /*     while (!ADCIntStatus(ADC0_BASE, 3, false)) */
-    /*         ; */
-    /*     ADCSequenceDataGet(ADC0_BASE, 3, &adcValue); */
-    /*     UARTprintf("[INFO] ADC reading %d\n", adcValue); */
-    /*     ADCIntClear(ADC0_BASE, 3); */
-    /* } */
+
+    while (1) {
+        ADCProcessorTrigger(ADC0_BASE, 3);
+        /* while (!ADCIntStatus(ADC0_BASE, 3, false)) */
+        /*     ; */
+    }
 }
