@@ -43,9 +43,8 @@ static void IntDefaultHandler(void);
 //*****************************************************************************
 extern int main(void);
 
-extern void Timer0IntHandler(void);
 extern void ADC0IntHandler(void);
-
+extern void GPIOPortAIntHandler(void);
 
 //*****************************************************************************
 //
@@ -80,7 +79,7 @@ void (* const g_pfnVectors[])(void) =
     0,                                      // Reserved
     IntDefaultHandler,                      // The PendSV handler
     IntDefaultHandler,                      // The SysTick handler
-    IntDefaultHandler,                      // GPIO Port A
+    GPIOPortAIntHandler,                      // GPIO Port A
     IntDefaultHandler,                      // GPIO Port B
     IntDefaultHandler,                      // GPIO Port C
     IntDefaultHandler,                      // GPIO Port D
@@ -97,9 +96,9 @@ void (* const g_pfnVectors[])(void) =
     IntDefaultHandler,                      // ADC Sequence 0
     IntDefaultHandler,                      // ADC Sequence 1
     IntDefaultHandler,                      // ADC Sequence 2
-    ADC0IntHandler,                      // ADC Sequence 3
+    ADC0IntHandler,                         // ADC Sequence 3
     IntDefaultHandler,                      // Watchdog timer
-    Timer0IntHandler,                      // Timer 0 subtimer A
+    IntDefaultHandler,                      // Timer 0 subtimer A
     IntDefaultHandler,                      // Timer 0 subtimer B
     IntDefaultHandler,                      // Timer 1 subtimer A
     IntDefaultHandler,                      // Timer 1 subtimer B

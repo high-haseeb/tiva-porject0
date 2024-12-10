@@ -34,12 +34,13 @@ SECTIONS
     {
         _text = .;
         KEEP(*(.isr_vector))
-        *(.text*)
-        *(.rodata*)
-        _etext = .;
+            *(.text*)
+            *(.rodata*)
+            *(.ARM.exidx*)
+            _etext = .;
     } > FLASH
 
-    .data : AT(ADDR(.text) + SIZEOF(.text))
+    .data : AT(ADDR(.text) + SIZEOF(.text) + 4)
     {
         _data = .;
         _ldata = LOADADDR (.data);
